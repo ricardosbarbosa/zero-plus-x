@@ -5,20 +5,21 @@
 button {
   /* padding: 10px; */
   background-color: cornflowerblue;
-  margin: 5px
+  margin: 2px
 }
 
 header {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 50px;
-  grid-gap: 5;
+  /* grid-gap: 5; */
   border: 1px solid black;
 }
+
 .App {
   font-family: sans-serif;
   text-align: center;
   border: 1px solid black;
-  height: 100vh;
+  /* height: 100vh; */
 }
 
