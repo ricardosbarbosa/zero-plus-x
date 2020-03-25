@@ -1,12 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "./styles.css";
 import { Stage, Layer, Shape, Text, Circle, Group } from "react-konva";
+import Konva  from "konva";
 
+const HEADER_HEIGHT = 0
+
+const model = {
+  findFourthPoint: ([p1, p2, p3]) => ({
+    x: p1.x + p3.x - p2.x,
+    y: p1.y + p3.y - p2.y
+  }),
+
+  findCenterOfParallelogram: ([p1, p2, p3, p4]) => ({
+      x : (p1.x + p2.x + p3.x + p4.x) / 4,
+      y : (p1.y + p2.y + p3.y + p4.y) / 4
+  }),
+
+  calculateAreaOfParallelogram: ([ p1, p2, p3, p4]) => Math.abs( p1.x * p2.y - p1.y * p2.x + p2.x * p3.y - p2.y * p3.x + p3.x * p4.y - p3.y * p4.x + p4.x * p1.y - p4.y * p1.x ) / 2
+}
 export default function App() {
   const [dots, setDots] = useState([]);
-  const [center, setCenter] = useState(null);
+  const [center, setCenter] = useState();
   const [area, setArea] = useState();
   const [radius, setRadius] = useState();
+
+  const addDot = useCallback((point, dots) => setDots([...dots, point]), [setDots])
 
   useEffect(() => {
     if (area) {
@@ -14,140 +32,91 @@ export default function App() {
       setRadius(r);
     }
   }, [area]);
-  useEffect(() => {
-    if (dots.length === 4) {
-      setArea(calcArea(dots));
-    }
-  }, [dots]);
-  useEffect(() => {
-    console.log(dots.length);
-    if (dots.length === 4) {
-      const m = { x: 0, y: 0 };
-      dots.forEach(({ x, y }) => {
-        m.x = m.x + x;
-        m.y = m.y + y;
-      });
-
-      m.x = m.x / 4;
-      m.y = m.y / 4;
-
-      setCenter(m);
-    }
-  }, [dots]);
 
   useEffect(() => {
     if (dots.length === 3) {
-      const newPoint = { x: 0, y: 0 };
-      dots.forEach(({ x, y }) => {
-        newPoint.x = newPoint.x + x;
-        newPoint.y = newPoint.y + y;
-      });
-
-      newPoint.x = newPoint.x / 3;
-      newPoint.y = newPoint.y / 3;
-
-      setDots([...dots, newPoint]);
+      const point = model.findFourthPoint(dots)
+      addDot(point, dots)
     }
-  }, [dots]);
+    if (dots.length === 4) {
+      const center = model.findCenterOfParallelogram(dots)
+      setCenter(center)
+      const area = model.calculateAreaOfParallelogram(dots)
+      setArea(area);
+    }
+  }, [dots, addDot]);
 
-  function handleClick(e) {
+  const handleClick = (e) => {
     if (dots.length < 4) {
-      var x = e.evt.clientX;
-      var y = e.evt.clientY;
+      var x = e.evt.x ;
+      var y = e.evt.y - HEADER_HEIGHT;
       const point = { x, y };
-      setDots([...dots, point]);
+      addDot(point, dots)
     }
-  }
-
-  function calcArea(points) {
-    const [
-      { x: x1, y: y1 },
-      { x: x2, y: y2 },
-      { x: x3, y: y3 },
-      { x: x4, y: y4 }
-    ] = points;
-    return (
-      Math.abs(
-        x1 * y2 -
-          y1 * x2 +
-          x2 * y3 -
-          y2 * x3 +
-          x3 * y4 -
-          y3 * x4 +
-          x4 * y1 -
-          y4 * x1
-      ) / 2
-    );
   }
 
   function drawShape(context, shape) {
-    const [
-      { x: x1, y: y1 },
-      { x: x2, y: y2 },
-      { x: x3, y: y3 },
-      { x: x4, y: y4 }
-    ] = dots;
+    const [ p1, p2, p3, p4] = dots;
     context.beginPath();
-
-    context.moveTo(x1, y1);
-    context.lineTo(x2, y2);
-    context.lineTo(x3, y3);
-    context.lineTo(x4, y4);
-    // context.quadraticCurveTo(150, 100, 260, 170);
+    context.moveTo(p1.x, p1.y);
+    context.lineTo(p2.x, p2.y);
+    context.lineTo(p3.x, p3.y);
+    context.lineTo(p4.x, p4.y);
     context.closePath();
-    // (!) Konva specific method, it is very important
     context.fillStrokeShape(shape);
+  }
+
+  const reset = () => {
+    setDots([]);
+    setCenter();
+    setArea();
+    setRadius();
+  }
+
+  const handleDragMove = index => e => {
+    const old = dots[index] 
+    const x = e.evt.clientX 
+    const y = e.evt.clientY// - HEADER_HEIGHT
+    let newArr = [...dots]; // copying the old datas array
+    newArr[index] = {x,y};
+    const next = (index + 1) === 4 ? 0 : index + 1 
+    newArr[next] = {
+      x: newArr[next].x + (x - old.x),
+      y: newArr[next].y + (y - old.y),
+    }
+    setDots(newArr)
   }
 
   return (
     <div className="App">
-      {JSON.stringify(center)} - {JSON.stringify(area)} -{" "}
-      {JSON.stringify(radius)}
-      <button
-        onClick={() => {
-          setDots([]);
-          setCenter(null);
-          setArea(null);
-          setRadius(null);
-        }}
-      >
-        reset
-      </button>
+      
       <Stage
         onClick={handleClick}
         width={window.innerWidth}
         height={window.innerHeight}
       >
         <Layer>
-          {dots.map(({ x, y }, i) => (
-            <Group key={i}>
-              <Text x={x} y={y} text={`(${x},${y})`} />
-              <Circle radius={5.5} x={x} y={y} fill="red" />
-            </Group>
-          ))}
-
-          {center && (
-            <Shape sceneFunc={drawShape} stroke="blue" strokeWidth={1} />
-          )}
-
+          
+          {center && (<Shape sceneFunc={drawShape} stroke="blue" strokeWidth={1} />)}
           {center && (
             <Group>
-              <Text
-                x={center.x}
-                y={center.y}
-                text={`(${center.x},${center.y})`}
-              />
-              <Circle
-                radius={radius}
-                x={center.x}
-                y={center.y}
-                stroke="yellow"
-                strokeWidth={1}
-              />
+              <Text x={center.x} y={center.y} text={`Area: ${area}`} />
+              <Circle radius={radius} x={center.x} y={center.y} stroke="orange" strokeWidth={1} />
             </Group>
           )}
+          {dots.map(({ x, y }, i) => (<Point  x={x} y={y} onDragMove={handleDragMove(i)}/>))}
+
+          
         </Layer>
       </Stage>
+
     </div>
   );
 }
+
+const Point = ({x, y, onDragMove}) => (
+  <Group draggable onDragMove={onDragMove} x={x} y={y}>
+    <Text text={`(${x},${y})`} />
+    <Circle radius={5.5} fill="red" />
+  </Group>
+)
