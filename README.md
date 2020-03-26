@@ -5,6 +5,9 @@ The user can drag the points and the apps updates the parallelogram.
 You can see this application deployed on netfly here:
 https://youthful-jackson-3b1b06.netlify.com/
 
+![zero-plus-x](https://github.com/ricardosbarbosa/zero-plus-x/blob/master/public/screen.png)
+
+
 To run the application locally, try:
 ```
 npm install
