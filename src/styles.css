@@ -4,8 +4,9 @@
 }
 button {
   /* padding: 10px; */
-  background-color: cornflowerblue;
-  margin: 2px
+  background-color: white;
+  margin: 2px;
+  font-size: 20px;
 }
 
 header {
